@@ -260,6 +260,7 @@ $.TokenList = function (input, url_or_data, settings) {
 
             if ($(input).data("settings").allowFreeTagging) {
               add_freetagging_tokens();
+              hidden_input.change();
             } else {
               $(this).val("");
             }
@@ -333,7 +334,7 @@ $.TokenList = function (input, url_or_data, settings) {
                 case KEY.ENTER:
                 case KEY.NUMPAD_ENTER:
                 case KEY.COMMA:
-                  if(selected_dropdown_item) {
+                  if(selected_dropdown_item && $(selected_dropdown_item).data("tokeninput")) {
                     add_token($(selected_dropdown_item).data("tokeninput"));
                     hidden_input.change();
                   } else {
@@ -342,6 +343,7 @@ $.TokenList = function (input, url_or_data, settings) {
                         return true;
                       } else {
                         add_freetagging_tokens();
+                        hidden_input.change();
                       }
                     } else {
                       $(this).val("");
@@ -382,6 +384,9 @@ $.TokenList = function (input, url_or_data, settings) {
     var selected_token = null;
     var selected_token_index = 0;
     var selected_dropdown_item = null;
+
+    // Keep the search status logged
+    var search_in_progress = false;
 
     // The list to store the token items in
     var token_list = $("<ul />")
@@ -555,6 +560,11 @@ $.TokenList = function (input, url_or_data, settings) {
     }
 
     function add_freetagging_tokens() {
+        //If allowFreeTaggingDuringSearch option is false and the search is not finished, return from this function
+        if (!$.isFunction($(input).data("settings").allowFreeTaggingDuringSearch) && search_in_progress){
+            return;
+        }
+
         var value = $.trim(input_box.val());
         var tokens = value.split($(input).data("settings").tokenDelimiter);
         $.each(tokens, function(i, token) {
@@ -817,6 +827,8 @@ $.TokenList = function (input, url_or_data, settings) {
 
     // Populate the results dropdown with some results
     function populate_dropdown (query, results) {
+        search_in_progress = false;
+
         if(results && results.length) {
             dropdown.empty();
             var dropdown_ul = $("<ul>")
@@ -913,6 +925,8 @@ $.TokenList = function (input, url_or_data, settings) {
 
     // Do the actual search
     function run_search(query) {
+        search_in_progress = true;
+
         var cache_key = query + computeURL();
         var cached_results = cache.get(cache_key);
         if(cached_results) {
