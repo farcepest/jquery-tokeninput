@@ -382,6 +382,9 @@ $.TokenList = function (input, url_or_data, settings) {
     var selected_token_index = 0;
     var selected_dropdown_item = null;
 
+    // Keep the search status logged
+    var search_in_progress = false;
+
     // The list to store the token items in
     var token_list = $("<ul />")
         .addClass($(input).data("settings").classes.tokenList)
@@ -554,6 +557,11 @@ $.TokenList = function (input, url_or_data, settings) {
     }
 
     function add_freetagging_tokens() {
+        //If allowFreeTaggingDuringSearch option is false and the search is not finished, return from this function
+        if (!$.isFunction($(input).data("settings").allowFreeTaggingDuringSearch) && search_in_progress){
+            return;
+        }
+
         var value = $.trim(input_box.val());
         var tokens = value.split($(input).data("settings").tokenDelimiter);
         $.each(tokens, function(i, token) {
@@ -811,6 +819,8 @@ $.TokenList = function (input, url_or_data, settings) {
 
     // Populate the results dropdown with some results
     function populate_dropdown (query, results) {
+        search_in_progress = false;
+
         if(results && results.length) {
             dropdown.empty();
             var dropdown_ul = $("<ul>")
@@ -907,6 +917,8 @@ $.TokenList = function (input, url_or_data, settings) {
 
     // Do the actual search
     function run_search(query) {
+        search_in_progress = true;
+
         var cache_key = query + computeURL();
         var cached_results = cache.get(cache_key);
         if(cached_results) {
