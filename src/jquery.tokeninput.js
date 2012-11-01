@@ -650,9 +650,17 @@ $.TokenList = function (input, url_or_data, settings) {
             }
         }
 
-        // For newly created tokens, restore the original name without the text saying it is a new token
-        if($(input).data("settings").allowCreation && item.wasCreated) {
-            ($(input).data("settings").tokenValue == "id") ? item.name = item.id : item.name = item[$(input).data("settings").tokenValue]; // restore the name without the token creation text
+        // For new, call onCreate to perform creation. onCreate should
+        // subsequently call input.add()/add_token() to add the new token.
+        if($(input).data("settings").allowCreation && item.createItem) {
+            if($.isFunction($(input).data("settings").onCreate)) {
+                var data = {};
+                data[$(input).data("settings").propertyToSearch] = input_box.val();
+                $(input).data("settings").onCreate.call(hidden_input, data);
+                return false;
+            } else {
+                item[$(input).data("settings").tokenValue] = input_box.val();
+            }
         }
 
         // Insert the new tokens
@@ -969,7 +977,7 @@ $.TokenList = function (input, url_or_data, settings) {
                       results = $(input).data("settings").onResult.call(hidden_input, results);
                   }
                   if($(input).data("settings").allowCreation) {
-                      handleCreation(results);
+                      request_creation($(input).data("settings").jsonContainer ? results[$(input).data("settings").jsonContainer] : results);
                   } else {
                       cache.add(cache_key, $(input).data("settings").jsonContainer ? results[$(input).data("settings").jsonContainer] : results);
                   }
@@ -993,7 +1001,7 @@ $.TokenList = function (input, url_or_data, settings) {
                     results = $(input).data("settings").onResult.call(hidden_input, results);
                 }
                 if($(input).data("settings").allowCreation) {
-                    handleCreation(results);
+                    request_creation($(input).data("settings").jsonContainer ? results[$(input).data("settings").jsonContainer] : results);
                 } else {
                     cache.add(cache_key, results);
                 }
@@ -1002,18 +1010,12 @@ $.TokenList = function (input, url_or_data, settings) {
         }
     }
 
-    function handleCreation(results) {
+    function request_creation(results) {
         var displayedItem = {};
         displayedItem['name'] = input_box.val() + ' ' + $(input).data("settings").createTokenText;
         displayedItem[$(input).data("settings").tokenValue] = input_box.val();
-        displayedItem['wasCreated'] = true;
+        displayedItem['createItem'] = true;
         results.push(displayedItem);
-
-        if($.isFunction($(input).data("settings").onCreate)) {
-            var item = {};
-            item[$(input).data("settings").tokenValue] = input_box.val();
-            $(input).data("settings").onCreate.call(hidden_input, item);
-        }
     }
 
     // compute the dynamic URL
